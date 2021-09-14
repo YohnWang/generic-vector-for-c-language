@@ -1,4 +1,5 @@
 #include"vector.h"
+#include<time.h>
 
 vector_def(int)
 vector_def(vector(int))
@@ -48,4 +49,19 @@ int main()
     vector_shrink_to_fit(&v);
     printf("v capacity=%zd\n",vector_capacity(&v));
     vector_del(&t);
+    printf("==========\n");
+    double average=0;
+    srand(time(NULL));
+    for(int i=0;i<100;i++)
+    {
+        __attribute__((cleanup(vector_del)))
+        vector(int) v={};
+        int cycle=rand();
+        for(ssize_t i=0;i<cycle;i++)
+            vector_push_back(&v,i);
+        double usage=1.0*vector_size(&v)/vector_capacity(&v);
+        average+=usage;
+        printf("[%d]: usage = %f\n",i,usage);
+    }
+    printf("average usage = %f\n",average/100);
 }
