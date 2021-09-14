@@ -111,7 +111,7 @@ static inline void $(vector_reserve,type)(vector(type) *v,ssize_t new_capacity) 
     }                                                                                           \
     else                                                                                        \
     {                                                                                           \
-        vector_debug("vector capacity is bigger than this new capacity\n");                     \
+        vector_debug("vector capacity is bigger equal than this new capacity\n");               \
     }                                                                                           \
 }                                                                                               \
 static inline void $(vector_resize,type)(vector(type) *v,ssize_t new_size)                      \
@@ -149,13 +149,16 @@ static inline void $(vector_shrink_to_fit,type)(vector(type) *v)                
         $(vector_del,type)(&t);                                                                 \
     }                                                                                           \
 }                                                                                               \
-static inline void $(vector_assign,type)(vector(type) *t,vector(type) *v)                       \
-{                                                                                               \
-    $(vector_del,type)(t);                                                                      \
-    $(vector_reserve,type)(t,$(vector_size,type)(v));                                           \
-    t->size=$(vector_size,type)(v);                                                             \
-    memcpy($(vector_data,type)(t),$(vector_data,type)(v),$(vector_size,type)(t)*sizeof(type));  \
-}                                                                                               \
+static inline void $(vector_assign,type)(vector(type) *t,vector(type) *v)                           \
+{                                                                                                   \
+    $(vector_del,type)(t);                                                                          \
+    if($(vector_size,type)(v)>0)                                                                    \
+    {                                                                                               \
+        $(vector_reserve,type)(t,$(vector_size,type)(v));                                           \
+        t->size=$(vector_size,type)(v);                                                             \
+        memcpy($(vector_data,type)(t),$(vector_data,type)(v),$(vector_size,type)(t)*sizeof(type));  \
+    }                                                                                               \
+}                                                                                                   \
 static inline void $(vector_move,type)(vector(type) *t,vector(type) *v)                         \
 {                                                                                               \
     vector(type) p=*t;                                                                          \
@@ -316,14 +319,17 @@ static inline void vector_move(void *t,void *v)
     }                                                                                           \
 })
 
-#define vector_assign(tptr,vptr)                                                                \
-({                                                                                              \
-    __auto_type $$(ta)=tptr;                                                                    \
-    typeof($$(ta)) $$(va)=vptr;                                                                 \
-    vector_del($$(ta));                                                                         \
-    vector_reserve($$(ta),vector_size($$(va)));                                                 \
-    $$(ta)->size=vector_size($$(va));                                                           \
-    memcpy(vector_data($$(ta)),vector_data($$(va)),vector_size($$(va))*sizeof($$(va)->a[0]));   \
+#define vector_assign(tptr,vptr)                                                                    \
+({                                                                                                  \
+    __auto_type $$(ta)=tptr;                                                                        \
+    typeof($$(ta)) $$(va)=vptr;                                                                     \
+    vector_del($$(ta));                                                                             \
+    if(vector_size($$(va))>0)                                                                       \
+    {                                                                                               \
+        vector_reserve($$(ta),vector_size($$(va)));                                                 \
+        $$(ta)->size=vector_size($$(va));                                                           \
+        memcpy(vector_data($$(ta)),vector_data($$(va)),vector_size($$(va))*sizeof($$(va)->a[0]));   \
+    }                                                                                               \
 })
 
 #define vector_shrink_to_fit(vptr) \
