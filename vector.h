@@ -27,6 +27,7 @@
 #define $$(str)  $(__name_to_convert,str)
 
 #define vector(type) $(vector,type)
+#define vector_raii __attribute__((cleanup(vector_del))) 
 
 #define vector_def(type)                                                            \
 struct vector(type)                                                                 \
@@ -245,9 +246,16 @@ static inline void vector_move(void *t,void *v)
     *vptr=tmp;
 }
 
-#define vector_at(vptr,index) ({&(vptr)->a[index];})
+#define vector_at(vptr,index) \
+({\
+    __auto_type $$(vx)=vptr;\
+    ssize_t $$(i)=index;\
+    vector_assert($$(i)>=0 && $$(i)<vector_size($$(vx)),"vector access out of range\n");\
+    &($$(vx)->a[$$(i)]);\
+})
+
 #define vector_data(vptr) ({(vptr)->a;})
-#define vector_get(vptr,index) ({(vptr)->a[index];})
+#define vector_get(vptr,index) ({*vector_at(vptr,index);})
 
 #define vector_divert(vptr)         \
 ({                                  \
@@ -355,6 +363,34 @@ static inline void vector_move(void *t,void *v)
             vector_reserve($$(v),size+size/2+1);    \
         $$(v)->a[$$(v)->size++]=$$(e);              \
     }                                               \
+})
+
+#define vector_insert(vptr,index,e_in) \
+({\
+    __auto_type $$(v1)=vptr;\
+    ssize_t $$(index)=index;\
+    vector_assert($$(index)>=0 && $$(index)<=vector_size($$(v1)),"vector insert out of range\n");\
+    typeof($$(v1)->a[0]) $$(e1)=e_in;\
+    {\
+        ssize_t size=vector_size($$(v1));\
+        __auto_type x=size>0?vector_get($$(v1),size-1):(typeof($$(e1))){0};\
+        vector_push_back($$(v1),x);\
+        for(ssize_t i=vector_size($$(v1))-2;i>$$(index);i--)\
+            *vector_at($$(v1),i)=*vector_at($$(v1),i-1);\
+        *vector_at($$(v1),index)=$$(e1);\
+    }\
+})
+
+#define vector_erase(vptr,index) \
+({\
+    __auto_type $$(ve)=vptr;\
+    ssize_t $$(indexe)=index;\
+    vector_assert($$(indexe)>=0 && $$(indexe)<vector_size($$(ve)),"vector erase out of range\n");\
+    {\
+        for(ssize_t i=$$(indexe);i<vector_size($$(ve))-1;i++)\
+            *vector_at($$(ve),i)=*vector_at($$(ve),i+1);\
+        vector_pop_back($$(ve));\
+    }\
 })
 
 #endif

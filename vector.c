@@ -7,8 +7,7 @@ vector_def(vector(vector(int)))
 
 int main()
 {
-    __attribute__((cleanup(vector_del_int)))
-    vector(int) v={};
+    vector_raii vector(int) v={};
     vector_push_back(&v,0);
     vector_push_back(&v,1);
     vector_push_back(&v,2);
@@ -64,4 +63,32 @@ int main()
         printf("[%d]: usage = %f\n",i,usage);
     }
     printf("average usage = %f\n",average/100);
+    printf("==========\n");
+    average=0;
+    for(int i=0;i<100;i++)
+    {
+        vector_init(&v);
+        int copy_times=0;
+        int cycle=rand();
+        for(int i=0;i<cycle;i++)
+        {
+            if(vector_capacity(&v)==vector_size(&v))
+            {
+                copy_times+=vector_size(&v);
+            }
+            vector_push_back(&v,i);
+        }
+        printf("copy precent :%f\n",1.0*copy_times/cycle);
+        average+=1.0*copy_times/cycle;
+    }
+    printf("average copy precent :%f\n",average/100);
+    printf("===========\n");
+    vector_del(&v);
+    vector_push_back(&v,0);
+    for(ssize_t i=0;i<100;i++)
+        vector_insert(&v,0,i);
+    vector_erase(&v,vector_size(&v)-1);
+    for(ssize_t i=0;i<vector_size(&v);i++)
+        printf("%d ",vector_get(&v,i));
+    printf("\n");
 }
