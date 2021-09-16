@@ -5,9 +5,6 @@
 #include<stdlib.h>
 #include<string.h>
 
-#include<stdio.h>
-#include<stdbool.h>
-
 #if defined(DEBUG) || defined(_DEBUG)
 #ifndef VECTOR_DEBUG
 #define VECTOR_DEBUG
@@ -16,6 +13,8 @@
 
 // vector相关的调试项
 #ifdef  VECTOR_DEBUG
+#include<stdio.h>
+#include<stdbool.h>
 #define vector_debug(format,...) fprintf(stderr,"[file: %s][line: %d]"format,__FILE__,__LINE__,##__VA_ARGS__)
 #define vector_assert(condition,...) do{ if((condition)==false) {vector_debug("assert error: %s\n",#condition ": " __VA_ARGS__);exit(1);}}while(0)
 #else
@@ -54,6 +53,8 @@ static inline void    $(vector_move,type)(vector(type) *t,vector(type) *v);     
 static inline type*   $(vector_divert,type)(vector(type) *v);                       \
 static inline void    $(vector_push_back,type)(vector(type) *v,type e);             \
 static inline void    $(vector_pop_back,type)(vector(type) *v);                     \
+static inline void    $(vector_insert,type)(vector(type) *v,ssize_t index,type e);  \
+static inline void    $(vector_erase,type)(vector(type) *v,ssize_t index);          \
                                                                                     \
 static inline void $(vector_init,type)(vector(type) *v)                                         \
 {                                                                                               \
@@ -174,19 +175,39 @@ static inline type* $(vector_divert,type)(vector(type) *v)                      
     v->a=NULL;                                                                                  \
     return ret;                                                                                 \
 }                                                                                               \
-static inline void $(vector_push_back,type)(vector(type) *v,type e)                             \
+static inline void $(_vector_push_back_none,type)(vector(type) *v)                              \
 {                                                                                               \
     ssize_t size=$(vector_size,type)(v);                                                        \
     ssize_t capacity=$(vector_capacity,type)(v);                                                \
     if(size==capacity)                                                                          \
         $(vector_reserve,type)(v,size+size/2+1);                                                \
-    v->a[v->size++]=e;                                                                          \
+    v->size++;                                                                                  \
+}                                                                                               \
+static inline void $(vector_push_back,type)(vector(type) *v,type e)                             \
+{                                                                                               \
+    $(_vector_push_back_none,type)(v);                                                          \
+    v->a[v->size-1]=e;                                                                          \
 }                                                                                               \
 static inline void $(vector_pop_back,type)(vector(type) *v)                                     \
 {                                                                                               \
     vector_assert(v->size>0,"vector empty but pop\n");                                          \
     v->size--;                                                                                  \
 }                                                                                               \
+static inline void $(vector_insert,type)(vector(type) *v,ssize_t index,type e)                  \
+{                                                                                               \
+    vector_assert(index>=0 && index<=$(vector_size,type)(v),"vector insert out of range\n");    \
+    $(_vector_push_back_none,type)(v);                                                          \
+    for(ssize_t i=$(vector_size,type)(v)-1;i>index;i--)                                         \
+        *$(vector_at,type)(v,i)=*$(vector_at,type)(v,i-1);                                      \
+    *$(vector_at,type)(v,index)=e;                                                              \
+}\
+static inline void $(vector_erase,type)(vector(type) *v,ssize_t index)\
+{\
+    vector_assert(index>=0 && index<$(vector_size,type)(v),"vector erase out of range\n");\
+    for(ssize_t i=index;i<$(vector_size,type)(v)-1;i++)\
+        *$(vector_at,type)(v,i)=*$(vector_at,type)(v,i+1);\
+    $(vector_pop_back,type)(v);\
+}
 
 struct _vector
 {
@@ -352,16 +373,24 @@ static inline void vector_move(void *t,void *v)
     }                                                                                           \
 })
 
+#define _vector_push_back_none(vptr) \
+({                                                  \
+    __auto_type $$(vn)=vptr;                        \
+    {                                               \
+        ssize_t size=vector_size($$(vn));           \
+        ssize_t capacity=vector_capacity($$(vn));   \
+        if(size==capacity)                          \
+            vector_reserve($$(vn),size+size/2+1);   \
+        $$(vn)->size++;                             \
+    }                                               \
+})
+
 #define vector_push_back(vptr,e_in) \
 ({                                                  \
     __auto_type $$(v)=vptr;                         \
-    typeof($$(v)->a[0]) $$(e)=e_in;                 \
     {                                               \
-        ssize_t size=vector_size($$(v));            \
-        ssize_t capacity=vector_capacity($$(v));    \
-        if(size==capacity)                          \
-            vector_reserve($$(v),size+size/2+1);    \
-        $$(v)->a[$$(v)->size++]=$$(e);              \
+        _vector_push_back_none($$(v));              \
+        $$(v)->a[$$(v)->size-1]=(e_in);             \
     }                                               \
 })
 
@@ -372,10 +401,8 @@ static inline void vector_move(void *t,void *v)
     vector_assert($$(index)>=0 && $$(index)<=vector_size($$(v1)),"vector insert out of range\n");\
     typeof($$(v1)->a[0]) $$(e1)=e_in;\
     {\
-        ssize_t size=vector_size($$(v1));\
-        __auto_type x=size>0?vector_get($$(v1),size-1):(typeof($$(e1))){0};\
-        vector_push_back($$(v1),x);\
-        for(ssize_t i=vector_size($$(v1))-2;i>$$(index);i--)\
+        _vector_push_back_none($$(v1));\
+        for(ssize_t i=vector_size($$(v1))-1;i>$$(index);i--)\
             *vector_at($$(v1),i)=*vector_at($$(v1),i-1);\
         *vector_at($$(v1),index)=$$(e1);\
     }\

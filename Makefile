@@ -2,11 +2,11 @@ CC=gcc
 
 srcs=$(wildcard *.c)
 objs=$(srcs:%.c=%.o)
-cflags=-Wall -Wextra -Wno-unused $(default_includes) $(macros) $(optimization)
+cflags=-Wall -Wextra $(default_includes) $(macros) $(optimization)
 default_includes=
 macros=-DDEBUG 
 ldflags=
-optimization=-O3
+optimization=-Ofast
 
 main.exe: $(objs)
 	$(CC) $^ -o $@ $(ldflags)

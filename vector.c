@@ -60,7 +60,7 @@ int main()
             vector_push_back(&v,i);
         double usage=1.0*vector_size(&v)/vector_capacity(&v);
         average+=usage;
-        printf("[%d]: usage = %f\n",i,usage);
+        //printf("[%d]: usage = %f\n",i,usage);
     }
     printf("average usage = %f\n",average/100);
     printf("==========\n");
@@ -78,16 +78,16 @@ int main()
             }
             vector_push_back(&v,i);
         }
-        printf("copy precent :%f\n",1.0*copy_times/cycle);
+        //printf("copy precent :%f\n",1.0*copy_times/cycle);
         average+=1.0*copy_times/cycle;
     }
     printf("average copy precent :%f\n",average/100);
     printf("===========\n");
-    vector_del(&v);
+    vector_clear(&v);
     vector_push_back(&v,0);
     for(ssize_t i=0;i<100;i++)
-        vector_insert(&v,0,i);
-    vector_erase(&v,vector_size(&v)-1);
+        vector_insert_int(&v,0,i);
+    vector_erase_int(&v,vector_size(&v)-1);
     for(ssize_t i=0;i<vector_size(&v);i++)
         printf("%d ",vector_get(&v,i));
     printf("\n");
