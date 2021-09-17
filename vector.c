@@ -91,4 +91,9 @@ int main()
     for(ssize_t i=0;i<vector_size(&v);i++)
         printf("%d ",vector_get(&v,i));
     printf("\n");
+    printf("===========\n");
+    vector_assign(&v,&v);
+    for(ssize_t i=0;i<vector_size(&v);i++)
+        printf("%d ",vector_get(&v,i));
+    printf("\n");
 }
