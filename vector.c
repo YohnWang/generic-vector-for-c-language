@@ -55,7 +55,7 @@ int main()
     {
         __attribute__((cleanup(vector_del)))
         vector(int) v={};
-        int cycle=rand();
+        int cycle=rand()%100000;
         for(ssize_t i=0;i<cycle;i++)
             vector_push_back(&v,i);
         double usage=1.0*vector_size(&v)/vector_capacity(&v);
@@ -69,7 +69,7 @@ int main()
     {
         vector_init(&v);
         int copy_times=0;
-        int cycle=rand();
+        int cycle=rand()%100000;
         for(int i=0;i<cycle;i++)
         {
             if(vector_capacity(&v)==vector_size(&v))
