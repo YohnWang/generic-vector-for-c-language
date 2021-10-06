@@ -30,7 +30,6 @@
 #endif
 
 #define $(str1,str2) str1##_##str2
-#define $$(str)  $(__name_to_convert,str)
 
 #define vector(type) $(vector,type)
 #define vector_raii __attribute__((cleanup(vector_del))) 

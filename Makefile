@@ -27,6 +27,4 @@ run: main.exe
 	./main.exe
 
 clean:
-	-rm *.o
-	-rm *.exe
-	-rm *.d
+	find . '(' -name *.o -or -name *.d -or -name *.exe ')' -delete
