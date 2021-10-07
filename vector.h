@@ -64,9 +64,7 @@ static inline void    $(vector_erase,type)(vector(type) *v,ssize_t index);      
                                                                                     \
 static inline void $(vector_init,type)(vector(type) *v)                                         \
 {                                                                                               \
-    v->size=0;                                                                                  \
-    v->capacity=0;                                                                              \
-    v->a=NULL;                                                                                  \
+    *v=(vector(type)){.size=0,.capacity=0,.a=NULL};                                             \
 }                                                                                               \
 static inline void $(vector_del,type)(vector(type) *v)                                          \
 {                                                                                               \
@@ -103,7 +101,7 @@ static inline void $(vector_reserve,type)(vector(type) *v,ssize_t new_capacity) 
     ssize_t size=$(vector_size,type)(v);                                                        \
     if(new_capacity>capacity)                                                                   \
     {                                                                                           \
-        type *p=malloc(new_capacity*sizeof(*p));                                                \
+        type *p=malloc((size_t)new_capacity*sizeof(*p));                                        \
         if(p==NULL)                                                                             \
         {                                                                                       \
             vector_debug("vector memory alloc failed\n");                                       \
@@ -111,7 +109,7 @@ static inline void $(vector_reserve,type)(vector(type) *v,ssize_t new_capacity) 
         }                                                                                       \
         if(size>0)                                                                              \
         {                                                                                       \
-            memcpy(p,v->a,size*sizeof(*p));                                                     \
+            memcpy(p,v->a,(size_t)size*sizeof(*p));                                             \
         }                                                                                       \
         free(v->a);                                                                             \
         v->capacity=new_capacity;                                                               \
@@ -164,7 +162,8 @@ static inline void $(vector_assign,type)(vector(type) *restrict t,vector(type) *
     {                                                                                                 \
         $(vector_reserve,type)(&c,$(vector_size,type)(v));                                            \
         c.size=$(vector_size,type)(v);                                                                \
-        memcpy($(vector_data,type)(&c),$(vector_data,type)(v),$(vector_size,type)(&c)*sizeof(type));  \
+        size_t len=$(vector_size,type)(&c)*sizeof(type);                                              \
+        memcpy($(vector_data,type)(&c),$(vector_data,type)(v),len);                                   \
     }                                                                                                 \
     $(vector_move,type)(t,&c);                                                                        \
     $(vector_del,type)(&c);                                                                           \
@@ -208,13 +207,13 @@ static inline void $(vector_insert,type)(vector(type) *v,ssize_t index,type e)  
     for(ssize_t i=$(vector_size,type)(v)-1;i>index;i--)                                         \
         *$(vector_at,type)(v,i)=*$(vector_at,type)(v,i-1);                                      \
     *$(vector_at,type)(v,index)=e;                                                              \
-}\
-static inline void $(vector_erase,type)(vector(type) *v,ssize_t index)\
-{\
-    vector_assert(index>=0 && index<$(vector_size,type)(v),"vector erase out of range\n");\
-    for(ssize_t i=index;i<$(vector_size,type)(v)-1;i++)\
-        *$(vector_at,type)(v,i)=*$(vector_at,type)(v,i+1);\
-    $(vector_pop_back,type)(v);\
+}                                                                                               \
+static inline void $(vector_erase,type)(vector(type) *v,ssize_t index)                          \
+{                                                                                               \
+    vector_assert(index>=0 && index<$(vector_size,type)(v),"vector erase out of range\n");      \
+    for(ssize_t i=index;i<$(vector_size,type)(v)-1;i++)                                         \
+        *$(vector_at,type)(v,i)=*$(vector_at,type)(v,i+1);                                      \
+    $(vector_pop_back,type)(v);                                                                 \
 }
 
 struct _vector
@@ -226,13 +225,11 @@ struct _vector
 
 #define vector_init(vptr) \
 ({\
-    inline void vector_init_helper(typeof(vptr) v)\
-    {                                             \
-        v->size=0;                                \
-        v->capacity=0;                            \
-        v->a=NULL;                                \
-    }                                             \
-    vector_init_helper(vptr);                     \
+    inline void vector_init_helper(typeof(vptr) v)    \
+    {                                                 \
+        *v=(typeof(*v)){.size=0,.capacity=0,.a=NULL}; \
+    }                                                 \
+    vector_init_helper(vptr);                         \
 })
 
 static inline void vector_del(void *v)
@@ -291,7 +288,15 @@ static inline void vector_del(void *v)
     vector_at_helper(vptr,index);                                               \
 })
 
-#define vector_data(vptr) ({(vptr)->a;})
+#define vector_data(vptr) \
+({\
+    inline typeof((vptr)->a) vector_data_helper(typeof(vptr) v)\
+    {\
+        return v->a;\
+    }\
+    vector_data_helper(vptr);\
+})
+
 #define vector_get(vptr,index) \
 ({\
     inline typeof((vptr)->a[0]) vector_get_helper(typeof(vptr) v,ssize_t i) \
@@ -299,11 +304,6 @@ static inline void vector_del(void *v)
         return *vector_at(v,i);                                             \
     }                                                                       \
     vector_get_helper(vptr,index);                                          \
-})
-
-#define vector_back(vptr) \
-({\
-    vector_at(vptr,vector_size(vptr)-1);\
 })
 
 #define vector_divert(vptr) \
@@ -327,7 +327,7 @@ static inline void vector_del(void *v)
         ssize_t size=vector_size(v);                                                       \
         if(new_capacity>capacity)                                                          \
         {                                                                                  \
-            typeof(v->a[0]) *p=malloc(new_capacity*sizeof(*p));                            \
+            typeof(v->a[0]) *p=malloc((size_t)new_capacity*sizeof(*p));                    \
             if(p==NULL)                                                                    \
             {                                                                              \
                 vector_debug("vector memory alloc failed\n");                              \
@@ -335,7 +335,7 @@ static inline void vector_del(void *v)
             }                                                                              \
             if(size>0)                                                                     \
             {                                                                              \
-                memcpy(p,v->a,size*sizeof(*p));                                            \
+                memcpy(p,v->a,(size_t)size*sizeof(*p));                                    \
             }                                                                              \
             free(v->a);                                                                    \
             v->capacity=new_capacity;                                                      \
@@ -390,7 +390,8 @@ static inline void vector_del(void *v)
         {                                                                                   \
             vector_reserve(&c,vector_size(v));                                              \
             c.size=vector_size(v);                                                          \
-            memcpy(vector_data(&c),vector_data(v),vector_size(&c)*sizeof(c.a[0]));          \
+            size_t len=vector_size(&c)*sizeof(c.a[0]);                                      \
+            memcpy(vector_data(&c),vector_data(v),len);                                     \
         }                                                                                   \
         vector_move(t,&c);                                                                  \
         vector_del(&c);                                                                     \
