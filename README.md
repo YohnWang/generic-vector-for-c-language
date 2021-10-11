@@ -58,11 +58,11 @@ vector在使用其他所有操作之前，都**必须初始化**
 
 # 向vector添加元素
 
-**1. vector_push_back(vector *v, T e)**
+### 1. vector_push_back(vector *v, T e)
 
 `vector_push_back()`向vector的尾部添加一个元素，不需要关心vector的空间是否足够，空间不足会自动重新申请一块更大的空间，并复制原有的元素。该操作具有摊还的O(1)时间复杂度。
 
-**2. vector_insert(vector *v, ssize_t index, T e)**
+### 2. vector_insert(vector *v, ssize_t index, T e)
 
 `vector_insert()`向vector的指定位置添加一个元素，添加位置的下标不能是任意的，范围是`[0,vector_size(&v)]`，允许在最后一个元素的下一个位置处添加元素。该操作的时间复杂度为O(n)。
 
@@ -78,57 +78,57 @@ vector的扩容公式为`size=size+size/2+1`，即每次将会增加一半（向
 
 # 删除vector中的元素
 
-**1. vector_pop_back(vector *v)**
+### 1. vector_pop_back(vector *v)
 
 `vector_pop_back()`会删除尾部的元素，实际的操作是将`size`成员减1，因此该操作的时间复杂度为O(1)
 
-**2. vector_erase(vector *v, ssize_t index)**
+### 2. vector_erase(vector *v, ssize_t index)
 
 `vector_erase()`会删除指定下标的元素，该操作的时间复杂度为O(n)
 
-**3. vector_clear(vector *v)**
+### 3. vector_clear(vector *v)
 
 `vector_clear()`将清空所有元素，实际的操作是将`size`成员置0，该操作的时间复杂度为O(1)
 
 # 获取vector中的元素
 
-**1. T* vector_at(vector *v, ssize_t index)**
+### 1. T* vector_at(vector *v, ssize_t index)
 
 `vector_at()`会返回指定下标元素的指针，该操作可用于引用或修改指定位置的元素，具有O(1)的时间复杂度
 
-**2. T vector_get(vector *v, ssize_t index)**
+### 2. T vector_get(vector *v, ssize_t index)
 
 `vector_get()`会返回指定下标的元素值，用于访问该元素，它是存储元素的一份拷贝，具有O(1)的时间复杂度
 
 # 获取vector的容量与元素个数
 
-**1. ssize_t vector_capacity(vector *v)**
+### 1. ssize_t vector_capacity(vector *v)
 
 `vector_capacity()`用于返回vector当前持有的内存能容纳元素的个数
 
-**2. ssize_t vector_size(vector *v)**
+### 2. ssize_t vector_size(vector *v)
 
 `vector_size()`用于返回vector当前存储的元素个数
 
 # 资源管理
 
-**1. vector_reserve(vector *v, ssize_t new_capacity)**
+### 1. vector_reserve(vector *v, ssize_t new_capacity)
 
 `vector_reserve()`用于指定vector持有的内存必须至少能容纳`new_capacity`个元素。该操作用于预先分配指定长度的内存，以减少添加元素时自动扩容带来的拷贝开销
 
-**2. vector_resize(vector *v, ssize_t new_size)**
+### 2. vector_resize(vector *v, ssize_t new_size)
 
 `vector_resize()`用于指定vector当前的元素个数，如果`new_size`大于当前元素个数，将会用0元素值填充，如果`new_size`小于当前元素个数，则后面的多余元素将会被删除
 
-**3. T* vector_data(vector *v)**
+### 3. T* vector_data(vector *v)
 
 `vector_data()`返回当前vector所持有内存的地址
 
-**4. T* vector_divert(vector *v)**
+### 4. T* vector_divert(vector *v)
 
 `vector_divert()`用于转移当前vector所持有的内存，它将返回持有内存的地址，并且不在拥有其控制权，vector中的所有成员将会被置0
 
-**5. vector_shrink_to_fit(vector *v)**
+### 5. vector_shrink_to_fit(vector *v)
 
 `vector_shrink_to_fit()`将使得vector持有的内存刚好容纳目前的所有元素，它用于提高内存利用率
 
@@ -136,17 +136,17 @@ vector的扩容公式为`size=size+size/2+1`，即每次将会增加一半（向
 
 # 拷贝与移动
 
-**1. vector_assign(vector *t, vector *v)**
+### 1. vector_assign(vector *t, vector *v)
 
 `vector_assign()`用于拷贝`v`至`t`，因为拷贝过程中会先释放`t`的资源，因此必须`t`必须初始化后才能使用
 
-**2. vector_move(vector *t, vector *v)**
+### 2. vector_move(vector *t, vector *v)
 
 `vector_move()`用于模拟c++中的移动赋值，将`v`的资源所有权转移给`t`。实际的实现是交换`t`和`v`的成员，因此，不能假设所有权转移后`t`的资源被释放，仍然需要保留`v`和`t`的`vector_del()`操作。**在不了解c++的移动语义时，不要使用该函数**
 
 # vector删除
 
-**vector_del(vector *v)**
+### vector_del(vector *v)
 
 `vector_del()`用于删除vector，它等价于c++的析构函数，由于c中必须手动管理，因此在使用完vector后需要执行该操作。
 
