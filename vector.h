@@ -1,9 +1,9 @@
+// This file <vector.h> is from https://github.com/YohnWang/generic-vector-for-c-language
 #ifndef VECTOR_H
 #define VECTOR_H
 
 #include<stddef.h>
 #include<stdlib.h>
-#include<string.h>
 
 #if defined(DEBUG) || defined(_DEBUG)
 #ifndef VECTOR_DEBUG
@@ -98,22 +98,19 @@ static inline void $(vector_clear,type)(vector(type) *v)                        
 static inline void $(vector_reserve,type)(vector(type) *v,ssize_t new_capacity)                 \
 {                                                                                               \
     ssize_t capacity=$(vector_capacity,type)(v);                                                \
-    ssize_t size=$(vector_size,type)(v);                                                        \
     if(new_capacity>capacity)                                                                   \
     {                                                                                           \
-        type *p=malloc((size_t)new_capacity*sizeof(*p));                                        \
-        if(p==NULL)                                                                             \
+        type *p=realloc(v->a,(size_t)new_capacity*sizeof(*p));                                  \
+        if(p!=NULL)                                                                             \
+        {                                                                                       \
+            v->a=p;                                                                             \
+            v->capacity=new_capacity;                                                           \
+        }                                                                                       \
+        else                                                                                    \
         {                                                                                       \
             vector_debug("vector memory alloc failed\n");                                       \
             exit(1);                                                                            \
         }                                                                                       \
-        if(size>0)                                                                              \
-        {                                                                                       \
-            memcpy(p,v->a,(size_t)size*sizeof(*p));                                             \
-        }                                                                                       \
-        free(v->a);                                                                             \
-        v->capacity=new_capacity;                                                               \
-        v->a=p;                                                                                 \
     }                                                                                           \
     else                                                                                        \
     {                                                                                           \
@@ -162,8 +159,23 @@ static inline void $(vector_assign,type)(vector(type) *restrict t,vector(type) *
     {                                                                                                 \
         $(vector_reserve,type)(&c,$(vector_size,type)(v));                                            \
         c.size=$(vector_size,type)(v);                                                                \
-        size_t len=$(vector_size,type)(&c)*sizeof(type);                                              \
-        memcpy($(vector_data,type)(&c),$(vector_data,type)(v),len);                                   \
+        ssize_t i=0;                                                                                  \
+        while(((c.size-i)&7)!=0)                                                                      \
+        {                                                                                             \
+            c.a[i]=v->a[i];                                                                           \
+            i++;                                                                                      \
+        }                                                                                             \
+        while(i+7<c.size)                                                                             \
+        {                                                                                             \
+            c.a[i]=v->a[i];i++;                                                                       \
+            c.a[i]=v->a[i];i++;                                                                       \
+            c.a[i]=v->a[i];i++;                                                                       \
+            c.a[i]=v->a[i];i++;                                                                       \
+            c.a[i]=v->a[i];i++;                                                                       \
+            c.a[i]=v->a[i];i++;                                                                       \
+            c.a[i]=v->a[i];i++;                                                                       \
+            c.a[i]=v->a[i];i++;                                                                       \
+        }                                                                                             \
     }                                                                                                 \
     $(vector_move,type)(t,&c);                                                                        \
     $(vector_del,type)(&c);                                                                           \
@@ -279,7 +291,7 @@ static inline void vector_del(void *v)
 })
 
 #define vector_at(vptr,index) \
-({                                                                              \
+({\
     inline typeof((vptr)->a) vector_at_helper(typeof(vptr) v,ssize_t i)         \
     {                                                                           \
         vector_assert(i>=0 && i<vector_size(v),"vector access out of range\n"); \
@@ -290,11 +302,11 @@ static inline void vector_del(void *v)
 
 #define vector_data(vptr) \
 ({\
-    inline typeof((vptr)->a) vector_data_helper(typeof(vptr) v)\
-    {\
-        return v->a;\
-    }\
-    vector_data_helper(vptr);\
+    inline typeof((vptr)->a) vector_data_helper(typeof(vptr) v) \
+    {                                                           \
+        return v->a;                                            \
+    }                                                           \
+    vector_data_helper(vptr);                                   \
 })
 
 #define vector_get(vptr,index) \
@@ -321,82 +333,94 @@ static inline void vector_del(void *v)
 
 #define vector_reserve(vptr,new_capacity_in) \
 ({\
-    inline void vector_reserve_helper(typeof(vptr) v,ssize_t new_capacity)                 \
-    {                                                                                      \
-        ssize_t capacity=vector_capacity(v);                                               \
-        ssize_t size=vector_size(v);                                                       \
-        if(new_capacity>capacity)                                                          \
-        {                                                                                  \
-            typeof(v->a[0]) *p=malloc((size_t)new_capacity*sizeof(*p));                    \
-            if(p==NULL)                                                                    \
-            {                                                                              \
-                vector_debug("vector memory alloc failed\n");                              \
-                exit(1);                                                                   \
-            }                                                                              \
-            if(size>0)                                                                     \
-            {                                                                              \
-                memcpy(p,v->a,(size_t)size*sizeof(*p));                                    \
-            }                                                                              \
-            free(v->a);                                                                    \
-            v->capacity=new_capacity;                                                      \
-            v->a=p;                                                                        \
-        }                                                                                  \
-        else                                                                               \
-        {                                                                                  \
-            vector_debug("vector capacity is bigger equal than this new capacity\n");      \
-        }                                                                                  \
-    }                                                                                      \
-    vector_reserve_helper(vptr,new_capacity_in);                                           \
+    inline void vector_reserve_helper(typeof(vptr) v,ssize_t new_capacity)              \
+    {                                                                                   \
+        ssize_t capacity=vector_capacity(v);                                            \
+        if(new_capacity>capacity)                                                       \
+        {                                                                               \
+            typeof(v->a) p=realloc(v->a,(size_t)new_capacity*sizeof(*p));               \
+            if(p!=NULL)                                                                 \
+            {                                                                           \
+                v->a=p;                                                                 \
+                v->capacity=new_capacity;                                               \
+            }                                                                           \
+            else                                                                        \
+            {                                                                           \
+                vector_debug("vector memory alloc failed\n");                           \
+                exit(1);                                                                \
+            }                                                                           \
+        }                                                                               \
+        else                                                                            \
+        {                                                                               \
+            vector_debug("vector capacity is bigger equal than this new capacity\n");   \
+        }                                                                               \
+    }                                                                                   \
+    vector_reserve_helper(vptr,new_capacity_in);                                        \
 })
 
 #define vector_resize(vptr,new_size_in) \
 ({\
-    inline void vector_resize_helper(typeof(vptr) v,ssize_t new_size)                               \
-    {                                                                                               \
-        typedef typeof(v->a[0]) type;                                                               \
-        ssize_t size=vector_size(v);                                                                \
-        ssize_t capacity=vector_capacity(v);                                                        \
-        if(new_size > size)                                                                         \
-        {                                                                                           \
-            if(new_size > capacity)                                                                 \
-                vector_reserve(v,new_size);                                                         \
-            ssize_t i=size;                                                                         \
-            while(((new_size-i)&7)!=0)                                                              \
-                v->a[i++]=(type){0};                                                                \
-            while(i+7<new_size)                                                                     \
-            {                                                                                       \
-                v->a[i++]=(type){0};                                                                \
-                v->a[i++]=(type){0};                                                                \
-                v->a[i++]=(type){0};                                                                \
-                v->a[i++]=(type){0};                                                                \
-                v->a[i++]=(type){0};                                                                \
-                v->a[i++]=(type){0};                                                                \
-                v->a[i++]=(type){0};                                                                \
-                v->a[i++]=(type){0};                                                                \
-            }                                                                                       \
-        }                                                                                           \
-        v->size=new_size;                                                                           \
-    }                                                                                               \
-    vector_resize_helper(vptr,new_size_in);                                                         \
+    inline void vector_resize_helper(typeof(vptr) v,ssize_t new_size)       \
+    {                                                                       \
+        typedef typeof(v->a[0]) type;                                       \
+        ssize_t size=vector_size(v);                                        \
+        ssize_t capacity=vector_capacity(v);                                \
+        if(new_size > size)                                                 \
+        {                                                                   \
+            if(new_size > capacity)                                         \
+                vector_reserve(v,new_size);                                 \
+            ssize_t i=size;                                                 \
+            while(((new_size-i)&7)!=0)                                      \
+                v->a[i++]=(type){0};                                        \
+            while(i+7<new_size)                                             \
+            {                                                               \
+                v->a[i++]=(type){0};                                        \
+                v->a[i++]=(type){0};                                        \
+                v->a[i++]=(type){0};                                        \
+                v->a[i++]=(type){0};                                        \
+                v->a[i++]=(type){0};                                        \
+                v->a[i++]=(type){0};                                        \
+                v->a[i++]=(type){0};                                        \
+                v->a[i++]=(type){0};                                        \
+            }                                                               \
+        }                                                                   \
+        v->size=new_size;                                                   \
+    }                                                                       \
+    vector_resize_helper(vptr,new_size_in);                                 \
 })
 
 #define vector_assign(tptr,vptr) \
 ({\
-    typedef typeof(*(tptr)) vector_type_t;                                                  \
-    inline void vector_assign_helper(vector_type_t *restrict t,vector_type_t *restrict v)   \
-    {                                                                                       \
-        vector_type_t c={0};                                                                \
-        if(vector_size(v)>0)                                                                \
-        {                                                                                   \
-            vector_reserve(&c,vector_size(v));                                              \
-            c.size=vector_size(v);                                                          \
-            size_t len=vector_size(&c)*sizeof(c.a[0]);                                      \
-            memcpy(vector_data(&c),vector_data(v),len);                                     \
-        }                                                                                   \
-        vector_move(t,&c);                                                                  \
-        vector_del(&c);                                                                     \
-    }                                                                                       \
-    vector_assign_helper(tptr,vptr);                                                        \
+    typedef typeof(*(tptr)) vector_type_t;                                  \
+    inline void vector_assign_helper(vector_type_t *t,vector_type_t *v)     \
+    {                                                                       \
+        vector_type_t c={0};                                                \
+        if(vector_size(v)>0)                                                \
+        {                                                                   \
+            vector_reserve(&c,vector_size(v));                              \
+            c.size=vector_size(v);                                          \
+            ssize_t i=0;                                                    \
+            while(((c.size-i)&7)!=0)                                        \
+            {                                                               \
+                c.a[i]=v->a[i];                                             \
+                i++;                                                        \
+            }                                                               \
+            while(i+7<c.size)                                               \
+            {                                                               \
+                c.a[i]=v->a[i];i++;                                         \
+                c.a[i]=v->a[i];i++;                                         \
+                c.a[i]=v->a[i];i++;                                         \
+                c.a[i]=v->a[i];i++;                                         \
+                c.a[i]=v->a[i];i++;                                         \
+                c.a[i]=v->a[i];i++;                                         \
+                c.a[i]=v->a[i];i++;                                         \
+                c.a[i]=v->a[i];i++;                                         \
+            }                                                               \
+        }                                                                   \
+        vector_move(t,&c);                                                  \
+        vector_del(&c);                                                     \
+    }                                                                       \
+    vector_assign_helper(tptr,vptr);                                        \
 })
 
 // 移动赋值
@@ -413,54 +437,54 @@ static inline void vector_del(void *v)
 })
 
 #define vector_shrink_to_fit(vptr) \
-({                                                                       \
-    inline void vector_shrink_to_fit_helper(typeof(vptr) v)              \
-    {                                                                    \
-        if(v->capacity - v->size > 0)                                    \
-        {                                                                \
-            typeof(*v) t={0};                                            \
-            vector_assign(&t,v);                                         \
-            vector_move(v,&t);                                           \
-            vector_del(&t);                                              \
-        }                                                                \
-    }                                                                    \
-    vector_shrink_to_fit_helper(vptr);                                   \
+({\
+    inline void vector_shrink_to_fit_helper(typeof(vptr) v)  \
+    {                                                        \
+        if(v->capacity - v->size > 0)                        \
+        {                                                    \
+            typeof(*v) t={0};                                \
+            vector_assign(&t,v);                             \
+            vector_move(v,&t);                               \
+            vector_del(&t);                                  \
+        }                                                    \
+    }                                                        \
+    vector_shrink_to_fit_helper(vptr);                       \
 })
 
 #define _vector_push_back_none(vptr) \
 ({\
-    inline void _vector_push_back_none_helper(typeof(vptr) v)                                       \
-    {                                                                                               \
-        ssize_t size=vector_size(v);                                                                \
-        ssize_t capacity=vector_capacity(v);                                                        \
-        if(size==capacity)                                                                          \
-            vector_reserve(v,size+size/2+1);                                                        \
-        v->size++;                                                                                  \
-    }                                                                                               \
+    inline void _vector_push_back_none_helper(typeof(vptr) v)   \
+    {                                                           \
+        ssize_t size=vector_size(v);                            \
+        ssize_t capacity=vector_capacity(v);                    \
+        if(size==capacity)                                      \
+            vector_reserve(v,size+size/2+1);                    \
+        v->size++;                                              \
+    }                                                           \
     _vector_push_back_none_helper(vptr);\
 })
 
 #define vector_push_back(vptr,e_in) \
-({                                                                                                  \
-    inline void vector_push_back_helper(typeof(vptr) v,typeof(v->a[0]) e)                           \
-    {                                                                                               \
-        _vector_push_back_none(v);                                                                  \
-        v->a[v->size-1]=e;                                                                          \
-    }                                                                                               \
-    vector_push_back_helper(vptr,e_in);                                                             \
+({\
+    inline void vector_push_back_helper(typeof(vptr) v,typeof(v->a[0]) e)   \
+    {                                                                       \
+        _vector_push_back_none(v);                                          \
+        v->a[v->size-1]=e;                                                  \
+    }                                                                       \
+    vector_push_back_helper(vptr,e_in);                                     \
 })
 
 #define vector_insert(vptr,index_in,e_in) \
 ({\
-    inline void vector_insert_helper(typeof(vptr) v,ssize_t index,typeof(v->a[0]) e)                \
-    {                                                                                               \
-        vector_assert(index>=0 && index<=vector_size(v),"vector insert out of range\n");            \
-        _vector_push_back_none(v);                                                                  \
-        for(ssize_t i=vector_size(v)-1;i>index;i--)                                                 \
-            *vector_at(v,i)=*vector_at(v,i-1);                                                      \
-        *vector_at(v,index)=e;                                                                      \
-    }                                                                                               \
-    vector_insert_helper(vptr,index_in,e_in);                                                       \
+    inline void vector_insert_helper(typeof(vptr) v,ssize_t index,typeof(v->a[0]) e)        \
+    {                                                                                       \
+        vector_assert(index>=0 && index<=vector_size(v),"vector insert out of range\n");    \
+        _vector_push_back_none(v);                                                          \
+        for(ssize_t i=vector_size(v)-1;i>index;i--)                                         \
+            *vector_at(v,i)=*vector_at(v,i-1);                                              \
+        *vector_at(v,index)=e;                                                              \
+    }                                                                                       \
+    vector_insert_helper(vptr,index_in,e_in);                                               \
 })
 
 #define vector_erase(vptr,index_in) \
