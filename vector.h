@@ -144,7 +144,7 @@ static inline void $(vector_resize,type)(vector(type) *v,ssize_t new_size)      
 }                                                                                               \
 static inline void $(vector_shrink_to_fit,type)(vector(type) *v)                                \
 {                                                                                               \
-    if(v->capacity - v->size > (ssize_t)((size_t)v->size/2))                                    \
+    if(v->capacity - v->size > 0)                                                               \
     {                                                                                           \
         vector(type) t={0};                                                                     \
         $(vector_assign,type)(&t,v);                                                            \
