@@ -181,7 +181,7 @@ void f()
 vector_def(int)
 void f()
 {
-	vector(int) v={};
+    vector(int) v={};
     vector_push_back_int(&v,0);
     vector_reserve_int(&v,10);
     vector_del_int(&v);
