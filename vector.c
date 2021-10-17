@@ -16,6 +16,7 @@ void syntax_test()
     vector_resize(&v,1);
     vector_at(&v,0);
     vector_get(&v,0);
+    vector_set(&v,0,1);
     vector_data(&v);
     vector_shrink_to_fit(&v);
     vector_clear(&v);

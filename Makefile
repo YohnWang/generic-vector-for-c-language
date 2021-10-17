@@ -2,7 +2,7 @@ CC=gcc
 
 srcs=$(wildcard *.c)
 objs=$(srcs:%.c=%.o)
-cflags=-Wall -Wextra $(default_includes) $(macros) $(optimization)
+cflags=-Wall -Wextra -fanalyzer $(default_includes) $(macros) $(optimization)
 default_includes=
 macros=-DDEBUG 
 ldflags=

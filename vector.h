@@ -11,16 +11,23 @@
 #endif
 #endif
 
+#ifndef vector_debug
+#define vector_debug(format, ...) fprintf(stderr,"[file: %s][line: %d][function: %s]"format,__FILE__,__LINE__,__func__,##__VA_ARGS__)
+#endif
+
+#define vector_error(format, ...) vector_debug(format,##__VA_ARGS__)  
+
 // debug for vector
 #ifdef  VECTOR_DEBUG
   #include<stdio.h>
   #include<stdbool.h>
-  #define vector_debug(format,...) fprintf(stderr,"[file: %s][line: %d]"format,__FILE__,__LINE__,##__VA_ARGS__)
-  #define vector_assert(condition,...) do{ if((condition)==false) {vector_debug("assert error: %s\n",#condition ": " __VA_ARGS__);exit(1);}}while(0)
+  #define vector_assert(condition, ...) do{ if((condition)==false) {vector_debug("assert error: %s\n",#condition ": " __VA_ARGS__);exit(1);}}while(0)
   #define vector_check(condition) if(1) 
+
+  #define vector_warning(format,...) vector_debug(format,##__VA_ARGS__) 
 #else
-  #define vector_debug(format,...)  
   #define vector_assert(condition,...)  
+  #define vector_warning(format,...)
   #ifdef VECTOR_RELEASE_FAST
     #define vector_check(condition) if(1) 
   #else
@@ -87,6 +94,10 @@ static inline type $(vector_get,type)(vector(type) *v,ssize_t index)            
 {                                                                                               \
     return *$(vector_at,type)(v,index);                                                         \
 }                                                                                               \
+static inline void $(vector_set,type)(vector(type) *v,ssize_t index,type e)                     \
+{                                                                                               \
+    *$(vector_at,type)(v,index)=e;                                                              \
+}                                                                                               \
 static inline type* $(vector_data,type)(vector(type) *v)                                        \
 {                                                                                               \
     return v->a;                                                                                \
@@ -108,13 +119,13 @@ static inline void $(vector_reserve,type)(vector(type) *v,ssize_t new_capacity) 
         }                                                                                       \
         else                                                                                    \
         {                                                                                       \
-            vector_debug("vector memory alloc failed\n");                                       \
+            vector_error("vector memory alloc failed\n");                                       \
             exit(1);                                                                            \
         }                                                                                       \
     }                                                                                           \
     else                                                                                        \
     {                                                                                           \
-        vector_debug("vector capacity is bigger equal than this new capacity\n");               \
+        vector_warning("vector capacity is bigger equal than this new capacity\n");             \
     }                                                                                           \
 }                                                                                               \
 static inline void $(vector_resize,type)(vector(type) *v,ssize_t new_size)                      \
@@ -177,8 +188,8 @@ static inline void $(vector_assign,type)(vector(type) *restrict t,vector(type) *
             c.a[i]=v->a[i];i++;                                                                       \
         }                                                                                             \
     }                                                                                                 \
-    $(vector_move,type)(t,&c);                                                                        \
-    $(vector_del,type)(&c);                                                                           \
+    $(vector_del,type)(t);                                                                            \
+    *t=c;                                                                                             \
 }                                                                                                     \
 static inline void $(vector_move,type)(vector(type) *restrict t,vector(type) *restrict v)       \
 {                                                                                               \
@@ -247,7 +258,8 @@ struct _vector
 static inline void vector_del(void *v)
 {
     struct _vector *vptr=v;
-    free(vptr->a);
+    if(vptr->a != NULL)
+        free(vptr->a);
     vptr->size=0;
     vptr->capacity=0;
     vptr->a=NULL;
@@ -316,6 +328,15 @@ static inline void vector_del(void *v)
         return *vector_at(v,i);                                             \
     }                                                                       \
     vector_get_helper(vptr,index);                                          \
+})
+
+#define vector_set(vptr,index_in,e_in) \
+({\
+    inline void vector_set_helper(typeof(vptr) v,ssize_t i,typeof(v->a[0]) e) \
+    {                                                                         \
+        *vector_at(v,i)=e;                                                    \
+    }                                                                         \
+    vector_set_helper(vptr,index_in,e_in);                                    \
 })
 
 #define vector_divert(vptr) \
@@ -417,8 +438,8 @@ static inline void vector_del(void *v)
                 c.a[i]=v->a[i];i++;                                         \
             }                                                               \
         }                                                                   \
-        vector_move(t,&c);                                                  \
-        vector_del(&c);                                                     \
+        vector_del(t);                                                      \
+        *t=c;                                                               \
     }                                                                       \
     vector_assign_helper(tptr,vptr);                                        \
 })

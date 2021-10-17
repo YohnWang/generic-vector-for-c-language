@@ -90,7 +90,7 @@ vector的扩容公式为`size=size+size/2+1`，即每次将会增加一半（向
 
 `vector_clear()`将清空所有元素，实际的操作是将`size`成员置0，该操作的时间复杂度为O(1)
 
-# 获取vector中的元素
+# 访存vector中的元素
 
 ### 1. T* vector_at(vector *v, ssize_t index)
 
@@ -99,6 +99,10 @@ vector的扩容公式为`size=size+size/2+1`，即每次将会增加一半（向
 ### 2. T vector_get(vector *v, ssize_t index)
 
 `vector_get()`会返回指定下标的元素值，用于访问该元素，它是存储元素的一份拷贝，具有O(1)的时间复杂度
+
+### 3. void vector_set(vector *v, ssize_t index, T e)
+
+`vector_set()`用于设置指定下标的元素值，具有O(1)的时间复杂度
 
 # 获取vector的容量与元素个数
 
@@ -142,13 +146,13 @@ vector的扩容公式为`size=size+size/2+1`，即每次将会增加一半（向
 
 ### 2. vector_move(vector *t, vector *v)
 
-`vector_move()`用于模拟c++中的移动赋值，将`v`的资源所有权转移给`t`。实际的实现是交换`t`和`v`的成员，因此，不能假设所有权转移后`t`的资源被释放，仍然需要保留`v`和`t`的`vector_del()`操作。**在不了解c++的移动语义时，不要使用该函数**
+`vector_move()`用于模拟c++中的移动赋值，将`v`的资源所有权转移给`t`。目前的实现是交换`t`和`v`的成员（这也是实现定义，可能会更改），因此，不能假设所有权转移后`t`的资源被释放，仍然需要保留`v`和`t`的`vector_del()`操作。**在不了解c++的移动语义时，不要使用该函数**
 
 # vector删除
 
 ### vector_del(vector *v)
 
-`vector_del()`用于删除vector，它等价于c++的析构函数，由于c中必须手动管理，因此在使用完vector后需要执行该操作。
+`vector_del()`用于删除并释放vector的资源，它等价于c++的析构函数，由于c中必须手动管理，因此在使用完vector后需要执行该操作。执行该操作之后的vector等价于刚初始化后的状态。
 
 gcc具有cleanup拓展，使得vector可以在离开作用域时自动执行`vector_del()`，写法如下
 
