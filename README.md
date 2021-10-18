@@ -96,13 +96,19 @@ vector的扩容公式为`size=size+size/2+1`，即每次将会增加一半（向
 
 `vector_at()`会返回指定下标元素的指针，该操作可用于引用或修改指定位置的元素，具有O(1)的时间复杂度
 
+`vector_at()`保证会检查当前的下标
+
 ### 2. T vector_get(vector *v, ssize_t index)
 
 `vector_get()`会返回指定下标的元素值，用于访问该元素，它是存储元素的一份拷贝，具有O(1)的时间复杂度
 
+`vector_get()`是`vector_at()`的便利写法
+
 ### 3. void vector_set(vector *v, ssize_t index, T e)
 
 `vector_set()`用于设置指定下标的元素值，具有O(1)的时间复杂度
+
+`vector_set()`是`vector_at()`的便利写法
 
 # 获取vector的容量与元素个数
 
@@ -126,7 +132,7 @@ vector的扩容公式为`size=size+size/2+1`，即每次将会增加一半（向
 
 ### 3. T* vector_data(vector *v)
 
-`vector_data()`返回当前vector所持有内存的地址
+`vector_data()`返回当前vector所持有内存的地址，它的目的是提供一个可以优化的接口访问数据，而避免`vector_at()`带来的下标检查开销
 
 ### 4. T* vector_divert(vector *v)
 
@@ -142,7 +148,7 @@ vector的扩容公式为`size=size+size/2+1`，即每次将会增加一半（向
 
 ### 1. vector_assign(vector *t, vector *v)
 
-`vector_assign()`用于拷贝`v`至`t`，因为拷贝过程中会先释放`t`的资源，因此必须`t`必须初始化后才能使用
+`vector_assign()`用于拷贝`v`至`t`，因为拷贝过程中会先释放`t`的资源，因此`t`必须初始化后才能使用
 
 ### 2. vector_move(vector *t, vector *v)
 
@@ -202,4 +208,6 @@ vector将会面临两种异常
 2. 越界访问（只在DEBUG模式下检查是否越界）
 
 这两种实际上都是不可恢复的错误，从这种错误中恢复过来是不可能的，因此目前遇到这两种异常将会打印错误报告，并直接退出程序。
+
+TODO：提供一种方式，在内存申请失败以及访问越界时提供一个默认的无效操作，保证程序可以运行下去（某些场景可以容忍程序错误，但不能崩溃）
 
