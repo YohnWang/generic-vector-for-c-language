@@ -1,4 +1,7 @@
 # vector
+
+该项目已合并至[gcc-magic-lib](https://github.com/YohnWang/gcc-magic-lib)
+
 a generic vector container for c like c++
 
 # 概述
